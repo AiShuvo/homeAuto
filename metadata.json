@@ -1,0 +1,6 @@
+{
+  "name": "Relay Controller",
+  "description": "A beautiful client-side web application to control 12 relays using Firebase Realtime Database, manage device names, and toggle locks.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
