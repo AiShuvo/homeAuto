@@ -12,8 +12,8 @@ export const DEFAULT_CONFIG: FirebaseConfig = {
   storageBucket: "home-automation-33f31.firebasestorage.app",
   messagingSenderId: "556537662644",
   appId: "1:556537662644:web:2dfc9d9970f9b5a9105be1",
-  email: "aislam12mr92@gmail.com",
-  password: "md.atiqul??77"
+  email: "",
+  password: ""
 };
 
 // Retrieve from localStorage or fallback
