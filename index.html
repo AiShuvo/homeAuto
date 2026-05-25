@@ -4,27 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>My Google AI Studio App</title>
-    <!-- Patch for read-only window.fetch error in sandbox iframe -->
-    <script>
-      (function() {
-        try {
-          var originalFetch = window.fetch;
-          var fetchValue = originalFetch;
-          Object.defineProperty(window, 'fetch', {
-            get: function() { return fetchValue; },
-            set: function(v) { fetchValue = v; },
-            configurable: true,
-            enumerable: true
-          });
-        } catch (e) {
-          console.warn('Could not patch window.fetch:', e);
-        }
-      })();
-    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
 
