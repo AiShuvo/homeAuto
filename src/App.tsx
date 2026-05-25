@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   getSavedConfig, 
@@ -36,7 +36,11 @@ import {
   Check, 
   Info,
   Sliders,
-  Sparkles
+  Sparkles,
+  Lock,
+  Unlock,
+  Eye,
+  EyeOff
 } from 'lucide-react';
 
 export default function App() {
@@ -53,6 +57,11 @@ export default function App() {
   const [authStatus, setAuthStatus] = useState<'unauthenticated' | 'authenticating' | 'authenticated' | 'error'>('unauthenticated');
   const [loading, setLoading] = useState(true);
   const [errorText, setErrorText] = useState<string | null>(null);
+  
+  // Login Gate States
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showGatePass, setShowGatePass] = useState(false);
 
   // Dynamic values from database
   const [relayStates, setRelayStates] = useState<Record<string, boolean>>({});
@@ -98,12 +107,12 @@ export default function App() {
           .catch((err) => {
             console.error("Authentication failed: ", err);
             setAuthStatus('error');
-            setErrorText(`Authentication Error: ${err.message}. Please check your credentials in settings.`);
+            setErrorText(`Authentication Error: ${err.message}. Please check your credentials.`);
             setLoading(false);
           });
       } else {
-        // Authenticating anonymously or skipping authentication depending on DB rules
-        setAuthStatus('authenticated'); // Assume authenticated for simple setups if email is empty
+        // Force unauthenticated state if credentials are empty to ask the user for security gate login
+        setAuthStatus('unauthenticated');
         setLoading(false);
       }
 
@@ -273,6 +282,35 @@ export default function App() {
     saveConfig(newConfig);
   };
 
+  // Gate login handler to login securely via browser local storage only
+  const handleGateLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!loginEmail || !loginPassword) return;
+    setErrorText(null);
+    const newConfig = {
+      ...config,
+      email: loginEmail,
+      password: loginPassword
+    };
+    setConfig(newConfig);
+    saveConfig(newConfig);
+  };
+
+  // Logout/Lock the admin interface manually and clear cache credentials from memory
+  const handleLogout = () => {
+    const newConfig = {
+      ...config,
+      email: '',
+      password: ''
+    };
+    setConfig(newConfig);
+    saveConfig(newConfig);
+    setAuthStatus('unauthenticated');
+    // Clear inputs
+    setLoginEmail('');
+    setLoginPassword('');
+  };
+
   return (
     <div className="min-h-screen bg-[#0F172A] text-slate-200 font-sans selection:bg-emerald-500/20 selection:text-emerald-100 pb-12">
       {/* Top Banner Status Bar */}
@@ -320,6 +358,16 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
+            {authStatus === 'authenticated' && (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 font-bold tracking-wider text-[10px] uppercase transition-all cursor-pointer"
+              >
+                <Lock className="w-3.5 h-3.5 text-red-400" />
+                <span>প্যানেল লক (Lock Dashboard)</span>
+              </button>
+            )}
+
             {/* Configure button */}
             <button
               id="open-settings-button"
@@ -343,7 +391,87 @@ export default function App() {
         )}
 
         {/* Quick Insights & Primary Global Controller Buttons */}
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {authStatus !== 'authenticated' ? (
+          /* Secure Lock Gate Terminal */
+          <div className="flex flex-col items-center justify-center py-10 px-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="w-full max-w-md bg-[#0F172A] border border-slate-800 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden"
+            >
+              {/* Highlight bar header */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-red-500"></div>
+
+              <div className="flex flex-col items-center text-center">
+                <div className="p-3.5 bg-red-500/10 border border-red-500/20 text-red-400 rounded-full mb-4">
+                  <Lock className="w-8 h-8" />
+                </div>
+                <h2 className="text-xs font-mono font-extrabold text-white tracking-widest uppercase mb-1">🔒 এডমিন প্যানেল লকড্</h2>
+                <h3 className="text-xs font-mono font-bold text-slate-400 tracking-wider">DASHBOARD LOCK ACTIVE</h3>
+                <p className="text-slate-400 text-xs mt-3 leading-relaxed">
+                  গিটহাবে নিরাপদে হোস্ট করার কারণে এবং অনাকাঙ্ক্ষিত অ্যাক্সেস রোধে আপনার পাসওয়ার্ড ও ইমেইল প্রটেক্টেড রাখা হয়েছে। ড্যাশবোর্ড অ্যাক্সেস করতে আপনার অনুমোদিত ক্রেডেনশিয়াল দিন:
+                </p>
+              </div>
+
+              <form onSubmit={handleGateLogin} className="space-y-4 mt-6">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400 flex items-center gap-1">
+                    <span>অ্যাথ ইমেইল (Login Email) *</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    required
+                    placeholder="your-email@example.com"
+                    className="w-full rounded-xl bg-slate-950 border border-slate-700 px-3.5 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 relative">
+                  <label className="text-[10px] font-mono tracking-wider uppercase font-bold text-slate-400">
+                    <span>পাসওয়ার্ড (Password) *</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showGatePass ? 'text' : 'password'}
+                      value={loginPassword}
+                      onChange={(e) => setLoginPassword(e.target.value)}
+                      required
+                      placeholder="••••••••"
+                      className="w-full rounded-xl bg-slate-950 border border-slate-700 pl-3.5 pr-10 py-2.5 text-sm text-slate-100 focus:outline-none focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowGatePass(!showGatePass)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-350 cursor-pointer"
+                    >
+                      {showGatePass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 mt-4 px-5 py-2.5 text-xs font-bold font-mono tracking-wider text-white bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-800 disabled:text-slate-600 rounded-xl shadow-lg transition-all border border-emerald-500/30 cursor-pointer text-center uppercase"
+                >
+                  <Unlock className="w-4 h-4" />
+                  <span>{loading ? 'প্রবেশ করা হচ্ছে...' : 'লগইন করুন (UNLOCK DASHBOARD)'}</span>
+                </button>
+              </form>
+
+              {/* Security Hint */}
+              <div className="mt-6 border-t border-slate-800/80 pt-4 text-[10px] font-mono leading-relaxed text-slate-500">
+                <span className="text-emerald-400 font-bold block mb-1">💡 নিরাপত্তা সতর্কতা (Security Notice):</span>
+                আপনার দেওয়া এই তথ্যসমূহ সম্পূর্ণ নিরাপদ ও এনক্রিপ্টেড উপায়ে শুধুমাত্র আপনার ব্যক্তিগত ব্রাউজারের <code className="bg-slate-950 text-slate-400 border border-slate-800 px-1 py-0.5 rounded">localStorage</code>-এ সংরক্ষিত থাকবে। গিটহাব সোর্স ফাইল বা অন্য কোনো পাবলিক সোর্সে এটি কখনোই দৃশ্যমান বা চুরি হওয়ার সম্ভাবনা নেই।
+              </div>
+            </motion.div>
+          </div>
+        ) : (
+          <>
+            {/* Quick Insights & Primary Global Controller Buttons */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           
           {/* Quick Metrics */}
           <div className="bg-slate-800/20 border border-slate-700/80 rounded-2xl p-5 shadow-sm flex flex-col justify-between hover:bg-slate-800/30 transition-all">
@@ -519,6 +647,8 @@ export default function App() {
             )}
           </AnimatePresence>
         </section>
+      </>
+    )}
 
       </main>
 
